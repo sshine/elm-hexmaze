@@ -29,7 +29,7 @@ type alias Model =
 
 emptyModel : Model
 emptyModel =
-    { cells = HexMap.rectangularPointyTopMap 15 38
+    { cells = HexMap.rectangularPointyTopMap 15 68
     , markedCells = []
     }
 
@@ -66,7 +66,7 @@ cellHeight =
 
 svgWidth : Int
 svgWidth =
-    1110
+    1920
 
 
 svgHeight : Int
