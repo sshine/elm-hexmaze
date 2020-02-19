@@ -149,8 +149,9 @@ hexGrid model =
 
 
 evolveCells : Dict Hash CellScore -> Dict Hash CellScore
-evolveCells markedCells =
-    Dict.map (\_ n -> max 0 (n - 1)) markedCells
+evolveCells =
+    Dict.map (\_ n -> max 0 (n - 1))
+        >> Dict.filter (\_ v -> v /= 0)
 
 
 markCell : Hash -> Dict Hash CellScore -> Dict Hash CellScore
