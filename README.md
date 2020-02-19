@@ -6,7 +6,7 @@ The answer was yes.  The heavy lifting is performed by Vyacheslav Voronchuk in
 [Voronchuk/hexagons][voronchuk].
 
 ```
-$ elm make src/Main.elm
+$ make
 ```
 
 [redblobgames]: https://www.redblobgames.com/grids/hexagons/
