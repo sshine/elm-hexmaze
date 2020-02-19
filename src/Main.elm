@@ -12,14 +12,17 @@ import Svg exposing (Svg)
 import Svg.Attributes
 import Svg.Events
 import Svg.Lazy
+import Task
+import Time
 
 
 main : Program () Model Msg
 main =
-    Browser.sandbox
+    Browser.element
         { init = init
         , view = view
         , update = update
+        , subscriptions = subscriptions
         }
 
 
@@ -30,6 +33,7 @@ type alias CellScore =
 type alias Model =
     { cells : Map
     , markedCells : Dict Hash CellScore
+    , watTime : Time.Posix
     }
 
 
@@ -37,27 +41,32 @@ emptyModel : Model
 emptyModel =
     { cells = HexMap.rectangularPointyTopMap 15 68
     , markedCells = Dict.empty
+    , watTime = Time.millisToPosix 0
     }
 
 
-init : Model
-init =
-    emptyModel
+init : () -> ( Model, Cmd Msg )
+init _ =
+    ( emptyModel, Task.perform (\_ -> NoOp) Time.now )
 
 
 type Msg
     = NoOp
+    | Tick Time.Posix
     | MarkCell Hash
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         NoOp ->
-            model
+            ( model, Cmd.none )
+
+        Tick _ ->
+            ( { model | markedCells = evolveCells model.markedCells }, Cmd.none )
 
         MarkCell cell ->
-            { model | markedCells = markCell cell model.markedCells }
+            ( { model | markedCells = markCell cell model.markedCells }, Cmd.none )
 
 
 cellWidth : Float
@@ -139,21 +148,25 @@ hexGrid model =
             (List.map (pointsToString << mapPolygonCorners << getCell) (Dict.toList model.cells))
 
 
-markCell : Hash -> Dict Hash CellScore -> Dict Hash CellScore
-markCell cell mcs =
-    case Dict.get cell mcs of
-        Nothing ->
-            Dict.insert cell 1 mcs
+evolveCells : Dict Hash CellScore -> Dict Hash CellScore
+evolveCells markedCells =
+    Dict.map (\_ n -> max 0 (n - 1)) markedCells
 
-        Just n ->
-            Dict.insert cell (n + 1) mcs
+
+markCell : Hash -> Dict Hash CellScore -> Dict Hash CellScore
+markCell cell markedCells =
+    Dict.insert cell (Array.length gradients) markedCells
 
 
 hexColor : Hash -> Model -> String
 hexColor hash model =
+    let
+        collatzColor n =
+            modBy (Array.length gradients) (collatz n)
+    in
     Dict.get hash model.markedCells
         |> Maybe.withDefault 0
-        |> (\n -> Array.get n gradients)
+        |> (\n -> Array.get (collatzColor n) gradients)
         |> Maybe.withDefault darkestGradient
 
 
@@ -189,20 +202,54 @@ mapPolygonCorners =
 gradients : Array String
 gradients =
     Array.fromList
-        [ "#e9ecef"
+        [ lightestGradient
+        , "#e0e0e0"
         , "#dcdcdc"
+        , "#d8d8d8"
         , "#d3d3d3"
+        , "#d0d0d0"
         , "#c8c8c8"
+        , "#c0c0c0"
         , "#bebebe"
+        , "#b8b8b8"
         , "#b0b0b0"
+        , "#a9a9a9"
         , "#a8a8a8"
+        , "#a0a0a0"
+        , "#989898"
         , "#909090"
+        , "#888888"
         , "#808080"
+        , "#787878"
         , "#707070"
+        , "#696969"
         , "#686868"
+        , "#606060"
         ]
+
+
+lightestGradient : String
+lightestGradient =
+    "#e9ecef"
 
 
 darkestGradient : String
 darkestGradient =
     "#585858"
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Time.every 100 Tick
+
+
+collatz : Int -> Int
+collatz n =
+    if n == 0 then
+        0
+
+    else if modBy 2 n == 0 then
+        n // 2
+
+    else
+        3 * n + 1
