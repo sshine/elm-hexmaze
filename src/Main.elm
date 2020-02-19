@@ -155,19 +155,30 @@ evolveCells =
 
 
 markCell : Hash -> Dict Hash CellScore -> Dict Hash CellScore
-markCell cell markedCells =
-    Dict.insert cell (Array.length gradients) markedCells
+markCell cell =
+    Dict.insert cell (Array.length gradients - 1)
 
 
 hexColor : Hash -> Model -> String
 hexColor hash model =
     let
+        collatz : Int -> Int
+        collatz n =
+            if n == 0 then
+                0
+
+            else if modBy 2 n == 0 then
+                n // 2
+
+            else
+                3 * n + 1
+
         collatzColor n =
-            modBy (Array.length gradients) (collatz n)
+            Array.get (modBy (Array.length gradients) (collatz n)) gradients
     in
     Dict.get hash model.markedCells
         |> Maybe.withDefault 0
-        |> (\n -> Array.get (collatzColor n) gradients)
+        |> collatzColor
         |> Maybe.withDefault darkestGradient
 
 
@@ -242,15 +253,3 @@ darkestGradient =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Time.every 100 Tick
-
-
-collatz : Int -> Int
-collatz n =
-    if n == 0 then
-        0
-
-    else if modBy 2 n == 0 then
-        n // 2
-
-    else
-        3 * n + 1
