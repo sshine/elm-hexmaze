@@ -1,7 +1,7 @@
 module Main exposing (main)
 
 import Browser
-import Dict
+import Dict exposing (Dict)
 import Hexagons.Hex exposing (Hex)
 import Hexagons.Layout as HexLayout exposing (Layout, Point)
 import Hexagons.Map as HexMap exposing (Hash, Map)
@@ -21,16 +21,20 @@ main =
         }
 
 
+type alias CellScore =
+    Int
+
+
 type alias Model =
     { cells : Map
-    , markedCells : List Hash
+    , markedCells : Dict Hash CellScore
     }
 
 
 emptyModel : Model
 emptyModel =
     { cells = HexMap.rectangularPointyTopMap 15 68
-    , markedCells = []
+    , markedCells = Dict.empty
     }
 
 
@@ -51,7 +55,20 @@ update msg model =
             model
 
         MarkCell cell ->
-            { model | markedCells = model.markedCells ++ [ cell ] }
+            { model | markedCells = markCell cell model.markedCells }
+
+
+markCell : Hash -> Dict Hash CellScore -> Dict Hash CellScore
+markCell cell mcs =
+    case Dict.get cell mcs of
+        Nothing ->
+            Dict.insert cell 1 mcs
+
+        Just 3 ->
+            Dict.remove cell mcs
+
+        Just n ->
+            Dict.insert cell (n + 1) mcs
 
 
 cellWidth : Float
@@ -135,11 +152,18 @@ hexGrid model =
 
 hexColor : Hash -> Model -> String
 hexColor hexLocation model =
-    if List.member hexLocation model.markedCells then
-        "#ffffff"
+    case Dict.get hexLocation model.markedCells of
+        Just 1 ->
+            "#81a684"
 
-    else
-        "#e9ecef"
+        Just 2 ->
+            "#57886c"
+
+        Just 3 ->
+            "#466060"
+
+        _ ->
+            "#e9ecef"
 
 
 {-| Helper to convert points to SVG string coordinates
