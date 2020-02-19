@@ -10,14 +10,17 @@ import Svg exposing (Svg)
 import Svg.Attributes
 import Svg.Events
 import Svg.Lazy
+import Task
+import Time
 
 
 main : Program () Model Msg
 main =
-    Browser.sandbox
+    Browser.element
         { init = init
         , view = view
         , update = update
+        , subscriptions = subscriptions
         }
 
 
@@ -28,6 +31,7 @@ type alias CellScore =
 type alias Model =
     { cells : Map
     , markedCells : Dict Hash CellScore
+    , watTime : Time.Posix
     }
 
 
@@ -35,27 +39,32 @@ emptyModel : Model
 emptyModel =
     { cells = HexMap.rectangularPointyTopMap 15 68
     , markedCells = Dict.empty
+    , watTime = Time.millisToPosix 0
     }
 
 
-init : Model
-init =
-    emptyModel
+init : () -> ( Model, Cmd Msg )
+init _ =
+    ( emptyModel, Task.perform (\_ -> NoOp) Time.now )
 
 
 type Msg
     = NoOp
+    | Tick Time.Posix
     | MarkCell Hash
 
 
-update : Msg -> Model -> Model
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         NoOp ->
-            model
+            ( model, Cmd.none )
+
+        Tick _ ->
+            ( { model | markedCells = evolveCells model.markedCells }, Cmd.none )
 
         MarkCell cell ->
-            { model | markedCells = markCell cell model.markedCells }
+            ( { model | markedCells = markCell cell model.markedCells }, Cmd.none )
 
 
 cellWidth : Float
@@ -137,17 +146,22 @@ hexGrid model =
             (List.map (pointsToString << mapPolygonCorners << getCell) (Dict.toList model.cells))
 
 
+evolveCells : Dict Hash CellScore -> Dict Hash CellScore
+evolveCells markedCells =
+    Dict.map (\_ n -> modBy 4 (n + 1)) markedCells
+
+
 markCell : Hash -> Dict Hash CellScore -> Dict Hash CellScore
-markCell cell mcs =
-    case Dict.get cell mcs of
+markCell cell markedCells =
+    case Dict.get cell markedCells of
         Nothing ->
-            Dict.insert cell 1 mcs
+            Dict.insert cell 1 markedCells
 
         Just 4 ->
-            Dict.remove cell mcs
+            Dict.remove cell markedCells
 
         Just n ->
-            Dict.insert cell (n + 1) mcs
+            Dict.insert cell (n + 1) markedCells
 
 
 hexColor : Hash -> Model -> String
@@ -196,3 +210,8 @@ getCellKey ( key, _ ) =
 mapPolygonCorners : Hex -> List Point
 mapPolygonCorners =
     HexLayout.polygonCorners layout
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Time.every 200 Tick
