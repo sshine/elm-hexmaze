@@ -1,11 +1,13 @@
 module Main exposing (main)
 
+import Array exposing (Array)
 import Browser
 import Dict exposing (Dict)
 import Hexagons.Hex exposing (Hex)
 import Hexagons.Layout as HexLayout exposing (Layout, Point)
 import Hexagons.Map as HexMap exposing (Hash, Map)
 import Html exposing (Html)
+import Maybe
 import Svg exposing (Svg)
 import Svg.Attributes
 import Svg.Events
@@ -151,22 +153,10 @@ markCell cell mcs =
 
 
 hexColor : Hash -> Model -> String
-hexColor hexLocation model =
-    case Dict.get hexLocation model.markedCells of
-        Just 4 ->
-            "#d3d3d3"
-
-        Just 3 ->
-            "#d8d8d8"
-
-        Just 2 ->
-            "#dcdcdc"
-
-        Just 1 ->
-            "#e0e0e0"
-
-        _ ->
-            "#e9ecef"
+hexColor hash model =
+    Dict.get hash model.markedCells
+        |> Maybe.andThen (\n -> Array.get n gradients)
+        |> Maybe.withDefault "#e9ecef"
 
 
 {-| Helper to convert points to SVG string coordinates
@@ -196,3 +186,25 @@ getCellKey ( key, _ ) =
 mapPolygonCorners : Hex -> List Point
 mapPolygonCorners =
     HexLayout.polygonCorners layout
+
+
+gradients : Array String
+gradients =
+    Array.fromList
+        [ "#dcdcdc"
+        , "#d3d3d3"
+        , "#c8c8c8"
+        , "#bebebe"
+        , "#b0b0b0"
+        , "#a8a8a8"
+        , "#909090"
+        , "#808080"
+        , "#707070"
+        , "#686868"
+        , "#585858"
+        ]
+
+
+numGradients : Int
+numGradients =
+    Array.length gradients
