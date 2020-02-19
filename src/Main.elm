@@ -145,9 +145,6 @@ markCell cell mcs =
         Nothing ->
             Dict.insert cell 1 mcs
 
-        Just 4 ->
-            Dict.remove cell mcs
-
         Just n ->
             Dict.insert cell (n + 1) mcs
 
@@ -155,8 +152,9 @@ markCell cell mcs =
 hexColor : Hash -> Model -> String
 hexColor hash model =
     Dict.get hash model.markedCells
-        |> Maybe.andThen (\n -> Array.get n gradients)
-        |> Maybe.withDefault "#e9ecef"
+        |> Maybe.withDefault 0
+        |> (\n -> Array.get n gradients)
+        |> Maybe.withDefault darkestGradient
 
 
 {-| Helper to convert points to SVG string coordinates
@@ -191,7 +189,8 @@ mapPolygonCorners =
 gradients : Array String
 gradients =
     Array.fromList
-        [ "#dcdcdc"
+        [ "#e9ecef"
+        , "#dcdcdc"
         , "#d3d3d3"
         , "#c8c8c8"
         , "#bebebe"
@@ -201,10 +200,9 @@ gradients =
         , "#808080"
         , "#707070"
         , "#686868"
-        , "#585858"
         ]
 
 
-numGradients : Int
-numGradients =
-    Array.length gradients
+darkestGradient : String
+darkestGradient =
+    "#585858"
