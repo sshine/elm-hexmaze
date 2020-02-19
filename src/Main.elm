@@ -58,19 +58,6 @@ update msg model =
             { model | markedCells = markCell cell model.markedCells }
 
 
-markCell : Hash -> Dict Hash CellScore -> Dict Hash CellScore
-markCell cell mcs =
-    case Dict.get cell mcs of
-        Nothing ->
-            Dict.insert cell 1 mcs
-
-        Just 3 ->
-            Dict.remove cell mcs
-
-        Just n ->
-            Dict.insert cell (n + 1) mcs
-
-
 cellWidth : Float
 cellWidth =
     16.0
@@ -139,7 +126,7 @@ hexGrid model =
                 , Svg.Attributes.strokeWidth "1px"
                 , Svg.Attributes.fill <| hexColor hexLocation model
                 , Svg.Attributes.points cornersCoords
-                , Svg.Events.onClick <| MarkCell hexLocation
+                , Svg.Events.onMouseOver <| MarkCell hexLocation
                 ]
                 []
             ]
@@ -150,17 +137,33 @@ hexGrid model =
             (List.map (pointsToString << mapPolygonCorners << getCell) (Dict.toList model.cells))
 
 
+markCell : Hash -> Dict Hash CellScore -> Dict Hash CellScore
+markCell cell mcs =
+    case Dict.get cell mcs of
+        Nothing ->
+            Dict.insert cell 1 mcs
+
+        Just 4 ->
+            Dict.remove cell mcs
+
+        Just n ->
+            Dict.insert cell (n + 1) mcs
+
+
 hexColor : Hash -> Model -> String
 hexColor hexLocation model =
     case Dict.get hexLocation model.markedCells of
-        Just 1 ->
-            "#81a684"
-
-        Just 2 ->
-            "#57886c"
+        Just 4 ->
+            "#d3d3d3"
 
         Just 3 ->
-            "#466060"
+            "#d8d8d8"
+
+        Just 2 ->
+            "#dcdcdc"
+
+        Just 1 ->
+            "#e0e0e0"
 
         _ ->
             "#e9ecef"
